@@ -1,0 +1,78 @@
+apollo-scheduler/
+│
+├── frontend/                     # React.js Frontend
+│   ├── public/                   # Static assets
+│   │   └── index.html
+│   ├── src/
+│   │   ├── assets/               # Images, icons, styles
+│   │   ├── components/           # Reusable UI components
+│   │   │   ├── forms/            # Login, Registration, Booking forms
+│   │   │   ├── layout/           # Navbar, Sidebar, Footer
+│   │   │   ├── dashboard/        # Admin/Staff dashboards
+│   │   │   └── notifications/    # Notification popups
+│   │   ├── pages/                # Route-level pages
+│   │   │   ├── AdminDashboard.jsx
+│   │   │   ├── StaffDashboard.jsx
+│   │   │   ├── PatientDashboard.jsx
+│   │   │   ├── Login.jsx
+│   │   │   ├── Register.jsx
+│   │   │   └── Appointment.jsx
+│   │   ├── services/             # API calls to backend
+│   │   │   ├── authService.js
+│   │   │   ├── appointmentService.js
+│   │   │   ├── resourceService.js
+│   │   │   └── notificationService.js
+│   │   ├── hooks/                # Custom React hooks
+│   │   │   └── useAuth.js
+│   │   ├── context/              # React Context (Auth, User, Theme)
+│   │   │   └── AuthContext.jsx
+│   │   ├── utils/                # Helper functions
+│   │   ├── App.js                # Main app component
+│   │   └── index.js              # Entry point
+│   ├── .env                      # Frontend environment variables
+│   ├── package.json
+│   └── vite.config.js / webpack.config.js
+│
+├── backend/                      # FastAPI Backend
+│   ├── app/
+│   │   ├── main.py                # Entry point
+│   │   ├── api/                   # API routes
+│   │   │   ├── auth.py
+│   │   │   ├── appointments.py
+│   │   │   ├── resources.py
+│   │   │   └── notifications.py
+│   │   ├── core/                  # Core configs
+│   │   │   ├── config.py
+│   │   │   └── security.py
+│   │   ├── models/                # SQLAlchemy models
+│   │   │   ├── user.py
+│   │   │   ├── appointment.py
+│   │   │   ├── hospital.py
+│   │   │   └── resource.py
+│   │   ├── schemas/               # Pydantic schemas
+│   │   │   ├── user.py
+│   │   │   ├── appointment.py
+│   │   │   ├── hospital.py
+│   │   │   └── resource.py
+│   │   ├── services/              # Business logic
+│   │   │   ├── auth_service.py
+│   │   │   ├── scheduling_service.py
+│   │   │   ├── resource_service.py
+│   │   │   └── notification_service.py
+│   │   ├── db/                    # Database config
+│   │   │   ├── session.py
+│   │   │   └── init_db.py
+│   │   ├── utils/                 # Utility functions
+│   │   │   ├── email.py
+│   │   │   └── alerts.py
+│   │   └── tests/                 # Unit & integration tests
+│   │       ├── test_auth.py
+│   │       ├── test_appointments.py
+│   │       └── test_resources.py
+│   ├── .env                       # Backend environment variables
+│   ├── requirements.txt           # Python dependencies
+│   └── Dockerfile
+│
+├── docker-compose.yml             # Multi-service orchestration
+├── README.md
+└── .gitignore
