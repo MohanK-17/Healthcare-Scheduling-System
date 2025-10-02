@@ -20,3 +20,4 @@ class User(Base):
     email = Column(String, unique=True, nullable=False, index=True)
     username = Column(String, unique=True, nullable=False)
     password_plain = Column(String, nullable=False)  # store hashed password in real app
+    specialization = Column(String, nullable=True)

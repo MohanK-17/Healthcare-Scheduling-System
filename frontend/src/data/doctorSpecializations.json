@@ -7,6 +7,10 @@
   { "name": "Dr. Linda Wolfe", "specialization": "General" },
   { "name": "Dr. Joshua Lewis", "specialization": "Cardiologist" },
   { "name": "Dr. Matthew Davis", "specialization": "Neurologist" },
-  { "name": "Dr. Hariniiii", "specialization": "Dermatologist" },
-  { "name": "Dr. Johnny", "specialization": "General" }
+  { "name": "Dr. Hariniiii", "specialization": "ENT" },
+  { "name": "Dr. Johnny", "specialization": "Psychiatrist" },
+  { "name": "Dr. Shiva", "specialization": "Gynecologist" },
+  { "name": "Dr. Avi", "specialization": "Pediatrician" },
+  { "name": "Dr. Saran", "specialization": "Orthopedic" },
+  { "name": "Dr. Sam", "specialization": "General" }
 ]
