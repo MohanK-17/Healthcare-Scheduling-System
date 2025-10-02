@@ -21,3 +21,4 @@ class Admin(Base):
     email = Column(String)
     password = Column(String)  # store hashed passwords ideally
     role = Column(String)
+    specialization = Column(String)
