@@ -1,22 +1,14 @@
 fastapi
 uvicorn
 sqlalchemy
-psycopg2
+psycopg2-binary
 python-jose
 passlib
 pydantic
-
 pydantic-settings
-
-
-psycopg2-binary
-
-alembic
 python-dotenv
-
-# For working with JSON, dates, and UUIDs
+alembic
 orjson
-
-# Optional for interactive API docs
 requests
-
+fastapi-mail
+email-validator

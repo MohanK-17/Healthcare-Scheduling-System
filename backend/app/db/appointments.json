@@ -122,6 +122,19 @@
             "created_at": "2025-10-02T05:35:55.098609Z"
         },
         {
+            "appointment_id": "APT-10012",
+            "patient_name": "kavi",
+            "age": 25,
+            "diagnosis": "-",
+            "doctor": "Dr. Anna Baldwin",
+            "date": "2025-10-14",
+            "time": "10:19 AM",
+            "status": "cancelled",
+            "created_at": "2025-10-02T04:50:05.272938Z",
+            "updated_at": "2025-10-02T05:40:54.658443Z"
+
+        },
+        {
             "appointment_id": "APT-10017",
             "patient_name": "mohan",
             "age": 20,
@@ -175,6 +188,20 @@
             "time": "2025-10-02T10:15:13.726Z",
             "status": "booked",
             "created_at": "2025-10-02T10:15:13.763636Z"
+
+            "updated_at": "2025-10-02T04:59:18.136549Z"
+        },
+        {
+            "appointment_id": "APT-1759369262",
+            "doctor": "vasee",
+            "doctor_email": "rockyvasee@gmail.com",
+            "patient": "Mohan K",
+            "patient_email": "mohank12092003@gmail.com",
+            "time": "8:00AM",
+            "status": "rejected",
+            "created_at": "2025-10-02T07:11:02.031985",
+            "updated_at": "2025-10-02T07:18:08.668448"
+
         }
     ]
 }
