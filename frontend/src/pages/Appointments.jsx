@@ -1,21 +1,42 @@
 import React, { useEffect, useState } from "react";
 import { getAppointments, addAppointment, deleteAppointment, getDoctors } from "../api/admin";
-import doctorSpecializationsData from "../data/doctorSpecializations.json"; // frontend JSON for doctor specializations
+import doctorSpecializationsData from "../data/doctorSpecializations.json";
 
 const Appointments = () => {
   const [appointments, setAppointments] = useState([]);
   const [doctors, setDoctors] = useState([]);
-  const [specializations, setSpecializations] = useState([]);
+  const [diagnoses, setDiagnoses] = useState([
+    "Cardiology",
+    "Dermatology",
+    "Neurology",
+    "Pediatrics",
+    "Orthopedic",
+    "ENT",
+    "Psychiatry",
+    "Gynecology",
+    "General"
+  ]);
+
   const [formData, setFormData] = useState({
     patient_name: "",
     age: "",
     diagnosis: "",
-    specialization: "General",
     doctor: "",
-    date: "",
-    time: "",
-    am_pm: "AM"
+    date: ""
   });
+
+  // Map diagnosis to JSON specialization
+  const diagnosisToSpecialization = {
+    "Cardiology": "Cardiologist",
+    "Dermatology": "Dermatologist",
+    "Neurology": "Neurologist",
+    "Pediatrics": "Pediatrician",
+    "Orthopedic": "Orthopedic",
+    "ENT": "ENT",
+    "Psychiatry": "Psychiatrist",
+    "Gynecology": "Gynecologist",
+    "General": "General"
+  };
 
   // Fetch appointments
   const fetchAppointments = async () => {
@@ -23,15 +44,10 @@ const Appointments = () => {
     setAppointments(data);
   };
 
-  // Fetch doctors from backend + specializations from JSON
+  // Fetch doctors
   const fetchDoctors = async () => {
     const data = await getDoctors();
     setDoctors(data);
-
-    // extract unique specializations from JSON
-    const specs = doctorSpecializationsData.map(d => d.specialization);
-    const uniqueSpecs = Array.from(new Set(specs));
-    setSpecializations(["General", ...uniqueSpecs]);
   };
 
   useEffect(() => {
@@ -39,42 +55,66 @@ const Appointments = () => {
     fetchDoctors();
   }, []);
 
-  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+  // Reset doctor when diagnosis changes
+  useEffect(() => {
+    setFormData(prev => ({ ...prev, doctor: "" }));
+  }, [formData.diagnosis]);
 
-  // Filter doctors by selected specialization
-  const filteredDoctors = formData.specialization === "General"
-    ? doctors
-    : doctors.filter(d => {
-        const specObj = doctorSpecializationsData.find(ds => ds.name === d.name);
-        return specObj?.specialization === formData.specialization;
-      });
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
 
+  // Filter doctors based on diagnosis
+  const availableDoctors = doctors.filter(d => {
+    if (formData.diagnosis === "" || formData.diagnosis === "General") return true;
+    const spec = doctorSpecializationsData.find(ds => ds.name === d.name);
+    return spec?.specialization === diagnosisToSpecialization[formData.diagnosis];
+  });
+
+  // Convert ISO date-time to readable 12-hour format
+  const displayTime12 = (iso) => {
+    if (!iso) return "";
+    const date = new Date(iso);
+    let hours = date.getHours();
+    const minutes = date.getMinutes().toString().padStart(2, "0");
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12 || 12;
+    return `${hours.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
+
+  // Add appointment
   const handleAdd = async (e) => {
     e.preventDefault();
-    const formattedData = {
+    if (!formData.patient_name || !formData.age || !formData.diagnosis || !formData.doctor || !formData.date) {
+      alert("Please fill all fields");
+      return;
+    }
+
+    const now = new Date().toISOString();
+
+    const newApptData = {
       ...formData,
       age: Number(formData.age),
-      time: `${formData.time} ${formData.am_pm}`
+      time: now,       // current timestamp as appointment time
+      created_at: now  // current timestamp as booking log
     };
 
-    const newAppt = await addAppointment(formattedData);
+    const newAppt = await addAppointment(newApptData);
     setAppointments([...appointments, newAppt]);
 
     setFormData({
       patient_name: "",
       age: "",
       diagnosis: "",
-      specialization: "General",
       doctor: "",
-      date: "",
-      time: "",
-      am_pm: "AM"
+      date: ""
     });
   };
 
+  // Delete appointment
   const handleDelete = async (id) => {
     await deleteAppointment(id);
-    setAppointments(appointments.filter((a) => a.appointment_id !== id));
+    setAppointments(appointments.filter(a => a.appointment_id !== id));
   };
 
   return (
@@ -92,26 +132,21 @@ const Appointments = () => {
         <input
           name="age"
           placeholder="Age"
-          type="number"
           value={formData.age}
           onChange={handleChange}
           required
         />
-        
 
-        {/* Specialization Dropdown */}
-        <select name="specialization" value={formData.specialization} onChange={handleChange}>
-          {specializations.map((spec, idx) => (
-            <option key={idx} value={spec}>{spec}</option>
-          ))}
+        {/* Diagnosis Dropdown */}
+        <select name="diagnosis" value={formData.diagnosis} onChange={handleChange} required>
+          <option value="">Select Diagnosis</option>
+          {diagnoses.map((d, idx) => <option key={idx} value={d}>{d}</option>)}
         </select>
 
-        {/* Doctor Dropdown filtered by specialization */}
+        {/* Doctor Dropdown */}
         <select name="doctor" value={formData.doctor} onChange={handleChange} required>
           <option value="">Select Doctor</option>
-          {filteredDoctors.map(d => (
-            <option key={d.id} value={d.name}>{d.name}</option>
-          ))}
+          {availableDoctors.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
         </select>
 
         <input
@@ -121,19 +156,6 @@ const Appointments = () => {
           onChange={handleChange}
           required
         />
-
-        <input
-          name="time"
-          type="time"
-          value={formData.time}
-          onChange={handleChange}
-          required
-        />
-
-        <select name="am_pm" value={formData.am_pm} onChange={handleChange}>
-          <option value="AM">AM</option>
-          <option value="PM">PM</option>
-        </select>
 
         <button type="submit">Add Appointment</button>
       </form>
@@ -145,28 +167,24 @@ const Appointments = () => {
             <th>Patient</th>
             <th>Age</th>
             <th>Diagnosis</th>
-            <th>Specialization</th>
             <th>Doctor</th>
             <th>Date</th>
-            <th>Time</th>
+            <th>Appointment Time (Log)</th>
             <th>Status</th>
-            <th>Created At</th>
             <th>Action</th>
           </tr>
         </thead>
         <tbody>
-          {appointments.map((a) => (
+          {appointments.map(a => (
             <tr key={a.appointment_id}>
               <td>{a.appointment_id}</td>
               <td>{a.patient_name}</td>
               <td>{a.age}</td>
               <td>{a.diagnosis}</td>
-              <td>{a.specialization || "General"}</td>
               <td>{a.doctor}</td>
               <td>{a.date}</td>
-              <td>{a.time}</td>
+              <td>{displayTime12(a.time)}</td>
               <td>{a.status}</td>
-              <td>{a.created_at}</td>
               <td>
                 <button onClick={() => handleDelete(a.appointment_id)}>Delete</button>
               </td>

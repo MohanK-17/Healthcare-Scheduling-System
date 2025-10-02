@@ -213,17 +213,24 @@ const Doctors = () => {
 
 export default Doctors;
  */
-
 import React, { useEffect, useState } from "react";
 import { getDoctors, addDoctor, updateDoctor, deleteDoctor } from "../api/admin";
-import doctorSpecializationsData from "../data/doctorSpecializations.json"; // JSON storing doctor specializations
-import fs from "fs"; // Node fs used in case you are writing JSON from frontend
+
+const specializationOptions = [
+  "General",
+  "Cardiology",
+  "Dermatology",
+  "Neurology",
+  "Pediatrics",
+  "Orthopedics"
+];
 
 const Doctors = () => {
   const [doctors, setDoctors] = useState([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
-  const [specialization, setSpecialization] = useState("");
+  const [password, setPassword] = useState("");
+  const [specialization, setSpecialization] = useState("General");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -232,7 +239,7 @@ const Doctors = () => {
   const [editEmail, setEditEmail] = useState("");
   const [editSpecialization, setEditSpecialization] = useState("");
 
-  // Fetch doctors from backend
+  // Fetch doctors
   const fetchDoctors = async () => {
     try {
       setLoading(true);
@@ -240,7 +247,7 @@ const Doctors = () => {
       setDoctors(data);
       setLoading(false);
     } catch (err) {
-      console.error("Fetch doctors error:", err.response || err);
+      console.error(err);
       setError("Failed to fetch doctors");
       setLoading(false);
     }
@@ -250,29 +257,24 @@ const Doctors = () => {
     fetchDoctors();
   }, []);
 
-  // Add new doctor
+  // Add doctor
   const handleAdd = async () => {
-    if (!name || !email || !specialization) {
-      setError("Please enter name, email, and specialization");
+    if (!name || !email || !password || !specialization) {
+      setError("All fields are required");
       return;
     }
-
     try {
-      const newDoctor = await addDoctor(name, email);
-
-      // Add specialization in frontend JSON
-      doctorSpecializationsData.push({ name: newDoctor.name, specialization });
-      // Optional: save JSON file if environment allows (Node.js)
-      // fs.writeFileSync("src/data/doctorSpecializations.json", JSON.stringify(doctorSpecializationsData, null, 2));
-
-      setDoctors([...doctors, newDoctor]);
-      setName("");
-      setEmail("");
-      setSpecialization("");
-      setError("");
+      const newDoctor = await addDoctor(name, email, password, specialization);
+      setDoctors([...doctors, {
+        id: newDoctor.id,
+        name,
+        email,
+        specialization
+      }]);
+      setName(""); setEmail(""); setPassword(""); setSpecialization("General"); setError("");
     } catch (err) {
-      console.error("Add doctor error:", err.response || err);
-      setError("Failed to add doctor");
+      console.error(err);
+      setError("Failed to add doctor. Check email or data format.");
     }
   };
 
@@ -281,14 +283,8 @@ const Doctors = () => {
     try {
       await deleteDoctor(id);
       setDoctors(doctors.filter(d => d.id !== id));
-
-      // Remove from specialization JSON
-      const doctor = doctors.find(d => d.id === id);
-      const index = doctorSpecializationsData.findIndex(ds => ds.name === doctor.name);
-      if (index !== -1) doctorSpecializationsData.splice(index, 1);
-
     } catch (err) {
-      console.error("Delete doctor error:", err.response || err);
+      console.error(err);
       setError("Failed to delete doctor");
     }
   };
@@ -298,135 +294,92 @@ const Doctors = () => {
     setEditingId(doctor.id);
     setEditName(doctor.name);
     setEditEmail(doctor.email);
-
-    const specObj = doctorSpecializationsData.find(ds => ds.name === doctor.name);
-    setEditSpecialization(specObj ? specObj.specialization : "");
+    setEditSpecialization(doctor.specialization);
     setError("");
   };
 
   // Save edited doctor
   const handleSave = async (id) => {
     if (!editName || !editEmail || !editSpecialization) {
-      setError("Name, email, and specialization cannot be empty");
+      setError("All fields are required");
       return;
     }
     try {
-      const updatedDoctor = await updateDoctor(id, editName, editEmail);
-
-      // Update specialization JSON
-      const specIndex = doctorSpecializationsData.findIndex(ds => ds.name === updatedDoctor.name);
-      if (specIndex !== -1) {
-        doctorSpecializationsData[specIndex].specialization = editSpecialization;
-      } else {
-        doctorSpecializationsData.push({ name: updatedDoctor.name, specialization: editSpecialization });
-      }
-
-      setDoctors(doctors.map(d => (d.id === id ? updatedDoctor : d)));
-      setEditingId(null);
-      setEditName("");
-      setEditEmail("");
-      setEditSpecialization("");
-      setError("");
+      await updateDoctor(id, editName, editEmail, editSpecialization);
+      setDoctors(doctors.map(d => d.id === id ? {
+        ...d,
+        name: editName,
+        email: editEmail,
+        specialization: editSpecialization
+      } : d));
+      handleCancel();
     } catch (err) {
-      console.error("Update doctor error:", err.response || err);
+      console.error(err);
       setError("Failed to update doctor");
     }
   };
 
-  // Cancel editing
   const handleCancel = () => {
     setEditingId(null);
-    setEditName("");
-    setEditEmail("");
-    setEditSpecialization("");
+    setEditName(""); setEditEmail(""); setEditSpecialization("");
     setError("");
   };
 
   return (
     <div style={{ padding: "20px" }}>
       <h2>Doctors</h2>
-
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div style={{ marginBottom: "10px" }}>
-        <input
-          placeholder="Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          style={{ marginRight: "5px" }}
-        />
-        <input
-          placeholder="Email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          style={{ marginRight: "5px" }}
-        />
-        <input
-          placeholder="Specialization"
-          value={specialization}
-          onChange={(e) => setSpecialization(e.target.value)}
-          style={{ marginRight: "5px" }}
-        />
+      <div style={{ marginBottom: "15px" }}>
+        <input placeholder="Name" value={name} onChange={e => setName(e.target.value)} style={{ marginRight: "5px" }} />
+        <input placeholder="Email" value={email} onChange={e => setEmail(e.target.value)} style={{ marginRight: "5px" }} />
+        <input placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} style={{ marginRight: "5px" }} />
+        <select value={specialization} onChange={e => setSpecialization(e.target.value)} style={{ marginRight: "5px" }}>
+          {specializationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+        </select>
         <button onClick={handleAdd}>Add Doctor</button>
       </div>
 
-      {loading ? (
-        <p>Loading doctors...</p>
-      ) : (
+      {loading ? <p>Loading doctors...</p> : (
         <table border="1" style={{ width: "100%", borderCollapse: "collapse" }}>
           <thead>
             <tr>
-              <th style={{ padding: "5px" }}>Name</th>
-              <th style={{ padding: "5px" }}>Email</th>
-              <th style={{ padding: "5px" }}>Specialization</th>
-              <th style={{ padding: "5px" }}>Actions</th>
+              <th>Name</th>
+              <th>Email</th>
+              <th>Specialization</th>
+              <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {doctors.map((d) => {
-              const specObj = doctorSpecializationsData.find(ds => ds.name === d.name);
-              const spec = specObj ? specObj.specialization : "";
-              return (
-                <tr key={d.id}>
-                  {editingId === d.id ? (
-                    <>
-                      <td>
-                        <input
-                          value={editName}
-                          onChange={(e) => setEditName(e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          value={editEmail}
-                          onChange={(e) => setEditEmail(e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <input
-                          value={editSpecialization}
-                          onChange={(e) => setEditSpecialization(e.target.value)}
-                        />
-                      </td>
-                      <td>
-                        <button onClick={() => handleSave(d.id)}>Save</button>
-                        <button onClick={handleCancel} style={{ marginLeft: "5px" }}>Cancel</button>
-                      </td>
-                    </>
-                  ) : (
-                    <>
-                      <td>{d.name}</td>
-                      <td>{d.email}</td>
-                      <td>{spec}</td>
-                      <td>
-                        <button onClick={() => handleEdit(d)}>Edit</button>
-                        <button onClick={() => handleDelete(d.id)} style={{ marginLeft: "5px" }}>Delete</button>
-                      </td>
-                    </>
-                  )}
-                </tr>
-              )
-            })}
+            {doctors.map(d => (
+              <tr key={d.id}>
+                {editingId === d.id ? (
+                  <>
+                    <td><input value={editName} onChange={e => setEditName(e.target.value)} /></td>
+                    <td><input value={editEmail} onChange={e => setEditEmail(e.target.value)} /></td>
+                    <td>
+                      <select value={editSpecialization} onChange={e => setEditSpecialization(e.target.value)}>
+                        {specializationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+                      </select>
+                    </td>
+                    <td>
+                      <button onClick={() => handleSave(d.id)}>Save</button>
+                      <button onClick={handleCancel} style={{ marginLeft: "5px" }}>Cancel</button>
+                    </td>
+                  </>
+                ) : (
+                  <>
+                    <td>{d.name}</td>
+                    <td>{d.email}</td>
+                    <td>{d.specialization}</td>
+                    <td>
+                      <button onClick={() => handleEdit(d)}>Edit</button>
+                      <button onClick={() => handleDelete(d.id)} style={{ marginLeft: "5px" }}>Delete</button>
+                    </td>
+                  </>
+                )}
+              </tr>
+            ))}
           </tbody>
         </table>
       )}
