@@ -1,0 +1,22 @@
+fastapi
+uvicorn
+sqlalchemy
+psycopg2
+python-jose
+passlib
+pydantic
+
+pydantic-settings
+
+
+psycopg2-binary
+
+alembic
+python-dotenv
+
+# For working with JSON, dates, and UUIDs
+orjson
+
+# Optional for interactive API docs
+requests
+
