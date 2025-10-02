@@ -1,6 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from app.api import admin  # Import your admin router (and any other routers)
+from app.api import admin,doctor,appointment,patient  # Import your admin router (and any other routers)
 
 app = FastAPI(title="Healthcare Management System API")
 
@@ -20,6 +20,9 @@ app.add_middleware(
 
 # ✅ Include your routers
 app.include_router(admin.router, prefix="/admin", tags=["Admin"])
+app.include_router(doctor.router, prefix="/doctor", tags=["Doctor"])
+app.include_router(patient.router, prefix="/patient", tags=["Patient"])
+app.include_router( appointment.router,prefix="/appointments", tags=["Appointments"] )
 
 # Root route
 @app.get("/")
