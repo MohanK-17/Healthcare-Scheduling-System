@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../components/Sidebar";
-import { getDoctors, getAppointments } from "../api/admin";
+import Sidebar from "../../components/admin/Sidebar";
+import { getDoctors, getAppointments } from "../../api/admin";
 
 export default function Dashboard({ admin }) {
   const [doctors, setDoctors] = useState([]);

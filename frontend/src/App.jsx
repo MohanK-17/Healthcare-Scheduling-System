@@ -36,10 +36,10 @@ export default App;
 
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Appointments from "./pages/Appointments";
-import Doctors from "./pages/Doctors";
-import Dashboard from "./pages/Dashboard";
+import Login from "./pages/admin/Login";
+import Appointments from "./pages/admin/Appointments";
+import Doctors from "./pages/admin/Doctors";
+import Dashboard from "./pages/admin/Dashboard";
 
 function App() {
   return (
