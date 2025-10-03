@@ -132,7 +132,6 @@
             "status": "cancelled",
             "created_at": "2025-10-02T04:50:05.272938Z",
             "updated_at": "2025-10-02T05:40:54.658443Z"
-
         },
         {
             "appointment_id": "APT-10017",
@@ -179,19 +178,6 @@
             "created_at": "2025-10-02T08:54:01.213527Z"
         },
         {
-            "appointment_id": "APT-10021",
-            "patient_name": "santhi",
-            "age": 40,
-            "diagnosis": "Cardiology",
-            "doctor": "Dr. Jeffery Wagner",
-            "date": "2025-10-02",
-            "time": "2025-10-02T10:15:13.726Z",
-            "status": "booked",
-            "created_at": "2025-10-02T10:15:13.763636Z"
-
-            "updated_at": "2025-10-02T04:59:18.136549Z"
-        },
-        {
             "appointment_id": "APT-1759369262",
             "doctor": "vasee",
             "doctor_email": "rockyvasee@gmail.com",
@@ -201,7 +187,17 @@
             "status": "rejected",
             "created_at": "2025-10-02T07:11:02.031985",
             "updated_at": "2025-10-02T07:18:08.668448"
-
+        },
+        {
+            "appointment_id": "APT-1759369263",
+            "patient_name": "mohan",
+            "age": 20,
+            "diagnosis": "Orthopedic",
+            "doctor": "Dr. Joshua Booth",
+            "date": "2025-10-02",
+            "time": "2025-10-03T02:02:19.102Z",
+            "status": "booked",
+            "created_at": "2025-10-03T02:02:19.160378Z"
         }
     ]
 }

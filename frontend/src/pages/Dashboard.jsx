@@ -6,31 +6,14 @@ export default function Dashboard({ admin }) {
   const [doctors, setDoctors] = useState([]);
   const [appointments, setAppointments] = useState([]);
 
-  // Random specializations for demo
-  const specializations = [
-    "Cardiology",
-    "Neurology",
-    "Dermatology",
-    "Pediatrics",
-    "Orthopedics",
-    "Oncology",
-    "Endocrinology",
-    "ENT",
-    "Radiology",
-    "Gastroenterology",
-  ];
-
   useEffect(() => {
     const fetchData = async () => {
       try {
         const docs = await getDoctors();
         const apps = await getAppointments();
-        // assign each doctor a random specialization if not present
-        const withSpec = docs.map((d, i) => ({
-          ...d,
-          specialization: specializations[i % specializations.length],
-        }));
-        setDoctors(withSpec);
+
+        // ✅ Use DB specialization directly
+        setDoctors(docs);
         setAppointments(apps);
       } catch (err) {
         console.error("Error loading dashboard data:", err);
@@ -69,7 +52,7 @@ export default function Dashboard({ admin }) {
             >
               <h4>{doc.name}</h4>
               <p style={{ margin: "5px 0", color: "#666" }}>
-                {doc.specialization}
+                {doc.specialization || "Not specified"}
               </p>
               <p style={{ fontSize: "12px", color: "#999" }}>{doc.email}</p>
             </div>
