@@ -12,11 +12,12 @@ from app.models.user import User
 from app.utils.email_utils import send_email
 
 router = APIRouter(prefix="/doctor", tags=["Doctor"])
-
 security = HTTPBasic()
+
 APPOINTMENT_FILE = Path(__file__).parent.parent / "db" / "appointments.json"
 
-# Load & Save Appointments
+
+# Utility functions
 def load_appointments() -> list[dict]:
     if not APPOINTMENT_FILE.exists():
         return []
@@ -25,26 +26,35 @@ def load_appointments() -> list[dict]:
             data = json.load(f)
         return data.get("appointments", [])
     except json.JSONDecodeError:
-        raise HTTPException(status_code=500, detail="Invalid appointments.json")
+        raise HTTPException(status_code=500, detail="Invalid appointments.json file")
+
 
 def save_appointments(appointments: list[dict]):
     with open(APPOINTMENT_FILE, "w", encoding="utf-8") as f:
         json.dump({"appointments": appointments}, f, indent=4)
 
+
 # Authentication
-def get_current_doctor(credentials: HTTPBasicCredentials = Depends(security), db: Session = Depends(get_db)) -> User:
+def get_current_doctor(
+    credentials: HTTPBasicCredentials = Depends(security),
+    db: Session = Depends(get_db)
+) -> User:
     doctor = db.query(User).filter(
         User.username == credentials.username,
         User.role == "doctor"
     ).first()
+
     if not doctor or not secrets.compare_digest(doctor.password_plain, credentials.password):
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized")
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Unauthorized doctor")
+
     return doctor
+
 
 # Login
 class DoctorLogin(BaseModel):
     username: str
     password: str
+
 
 @router.post("/login")
 def login(doctor_login: DoctorLogin, db: Session = Depends(get_db)):
@@ -52,56 +62,75 @@ def login(doctor_login: DoctorLogin, db: Session = Depends(get_db)):
         User.username == doctor_login.username,
         User.role == "doctor"
     ).first()
+
     if not doctor or doctor.password_plain != doctor_login.password:
         raise HTTPException(status_code=401, detail="Invalid credentials")
-    return {"message": "Login successful", "doctor": doctor.full_name}
+
+    return {
+        "message": "Login successful",
+        "doctor": {
+            "id": str(doctor.id),
+            "name": doctor.full_name,
+            "email": doctor.email,
+            "specialization": doctor.specialization
+        }
+    }
+
 
 # View Appointments
-@router.get("/appointments/pending")
-def view_pending_appointments(current_doctor: User = Depends(get_current_doctor)):
+@router.get("/appointments")
+def view_doctor_appointments(current_doctor: User = Depends(get_current_doctor)):
     appointments = load_appointments()
-    pending = [a for a in appointments if a.get("doctor") == current_doctor.full_name and a.get("status") == "pending"]
-    return {"pending_appointments": pending}
+    doctor_appointments = [
+        a for a in appointments if a.get("doctor_id") == str(current_doctor.id)
+    ]
+    return {"appointments": doctor_appointments}
 
-# Accept/Reject Appointments
-@router.put("/appointments/{appointment_id}/decision")
-def decide_appointment(
+
+# Confirm / Modify Appointment
+class AppointmentUpdate(BaseModel):
+    decision: str | None = None  # "accepted" or "rejected"
+
+
+@router.put("/appointments/{appointment_id}")
+def update_appointment(
     appointment_id: str,
-    decision: str,  # "accepted" or "rejected"
+    update_data: AppointmentUpdate,
     background_tasks: BackgroundTasks,
     current_doctor: User = Depends(get_current_doctor)
 ):
-    if decision not in ["accepted", "rejected"]:
-        raise HTTPException(status_code=400, detail="Decision must be 'accepted' or 'rejected'")
-
     appointments = load_appointments()
     found = False
 
-    for a in appointments:
-        if a.get("appointment_id") == appointment_id and a.get("doctor") == current_doctor.full_name:
-            a["status"] = decision
-            a["updated_at"] = datetime.utcnow().isoformat()
+    for appt in appointments:
+        if appt.get("appointment_id") == appointment_id and appt.get("doctor_id") == str(current_doctor.id):
             found = True
 
+            if update_data.decision:
+                if update_data.decision not in ["accepted", "rejected"]:
+                    raise HTTPException(status_code=400, detail="Decision must be 'accepted' or 'rejected'")
+                appt["status"] = update_data.decision
+
+            if update_data.date:
+                appt["date"] = update_data.date
+            if update_data.time:
+                appt["time"] = update_data.time
+            if update_data.diagnosis:
+                appt["diagnosis"] = update_data.diagnosis
+
+            appt["updated_at"] = datetime.utcnow().isoformat()
+
             # Send email to patient
-            patient_email = a.get("patient_email")
-            patient_name = a.get("patient")
-            time = a.get("time")
-            if patient_email:
-                if decision == "accepted":
-                    subject = "Appointment Confirmed"
-                    body = f"""
-                    <p>Dear {patient_name},</p>
-                    <p>Your appointment with Dr. {current_doctor.full_name} at <b>{time}</b> has been <b>confirmed</b>.</p>
-                    <p>Appointment ID: {appointment_id}</p>
-                    """
-                else:
-                    subject = "Appointment Rejected"
-                    body = f"""
-                    <p>Dear {patient_name},</p>
-                    <p>We are sorry. Your appointment with Dr. {current_doctor.full_name} at <b>{time}</b> has been <b>rejected</b>.</p>
-                    <p>Appointment ID: {appointment_id}</p>
-                    """
+            patient_email = appt.get("patient_email")
+            patient_name = appt.get("patient_name")
+            if patient_email and update_data.decision:
+                subject = "Appointment Confirmed" if update_data.decision == "accepted" else "Appointment Rejected"
+                body = f"""
+                <p>Dear {patient_name},</p>
+                <p>Your appointment with Dr. {current_doctor.full_name} ({current_doctor.specialization}) 
+                has been <b>{update_data.decision}</b>.</p>
+                <p>Appointment ID: {appointment_id}</p>
+                """
                 background_tasks.add_task(send_email, [patient_email], subject, body)
             break
 
@@ -109,7 +138,28 @@ def decide_appointment(
         raise HTTPException(status_code=404, detail="Appointment not found")
 
     save_appointments(appointments)
-    return {"message": f"Appointment {appointment_id} has been {decision}"}
+    return {"message": f"Appointment {appointment_id} updated successfully"}
+
+
+# Delete Appointment
+@router.delete("/appointments/{appointment_id}")
+def delete_appointment(
+    appointment_id: str,
+    current_doctor: User = Depends(get_current_doctor)
+):
+    appointments = load_appointments()
+    remaining = [
+        a for a in appointments if not (
+            a.get("appointment_id") == appointment_id and a.get("doctor_id") == str(current_doctor.id)
+        )
+    ]
+
+    if len(remaining) == len(appointments):
+        raise HTTPException(status_code=404, detail="Appointment not found or unauthorized access")
+
+    save_appointments(remaining)
+    return {"message": f"Appointment {appointment_id} deleted successfully"}
+
 
 # Doctor Profile
 @router.get("/profile")
@@ -119,22 +169,35 @@ def view_profile(current_doctor: User = Depends(get_current_doctor)):
         "name": current_doctor.full_name,
         "email": current_doctor.email,
         "username": current_doctor.username,
+        "specialization": current_doctor.specialization
     }
+
 
 @router.put("/profile")
 def update_profile(
-    name: str | None = None,
+    username: str | None = None,
+    fullname: str | None = None,
     email: str | None = None,
+    specialization: str | None = None,
     password: str | None = None,
     db: Session = Depends(get_db),
     current_doctor: User = Depends(get_current_doctor)
 ):
-    if name:
-        current_doctor.full_name = name
     if email:
+        existing_user = db.query(User).filter(User.email == email, User.id != current_doctor.id).first()
+        if existing_user:
+            raise HTTPException(status_code=400, detail="Email already in use")
         current_doctor.email = email
+
+    if username:
+        current_doctor.username = username
+    if fullname:
+        current_doctor.full_name = fullname
+    if specialization:
+        current_doctor.specialization = specialization
     if password:
         current_doctor.password_plain = password
+
     db.commit()
     db.refresh(current_doctor)
     return {"message": "Profile updated successfully"}
